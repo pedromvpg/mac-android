@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="0.1.0-beta"
+DEFAULT_REMOTE="/sdcard/Download"
+
+adb_cmd() {
+  if command -v adb >/dev/null 2>&1; then
+    adb "$@"
+    return
+  fi
+
+  local brew_adb="/opt/homebrew/bin/adb"
+  if [[ -x "$brew_adb" ]]; then
+    "$brew_adb" "$@"
+    return
+  fi
+
+  brew_adb="/usr/local/bin/adb"
+  if [[ -x "$brew_adb" ]]; then
+    "$brew_adb" "$@"
+    return
+  fi
+
+  echo "error: adb not found. Run: mac-android setup" >&2
+  exit 1
+}
+
+require_device() {
+  local devices
+  devices="$(adb_cmd devices | awk 'NR>1 && $2=="device" {print $1}')"
+
+  if [[ -z "$devices" ]]; then
+    cat >&2 <<'EOF'
+error: no Android device detected.
+
+Make sure:
+  1. USB debugging is enabled (Settings → Developer options → USB debugging)
+  2. The device is connected via USB
+  3. You accepted the "Allow USB debugging?" prompt on the phone
+EOF
+    exit 1
+  fi
+
+  local count
+  count="$(echo "$devices" | wc -l | tr -d ' ')"
+
+  if [[ "$count" -gt 1 ]]; then
+    if [[ -z "${ANDROID_SERIAL:-}" ]]; then
+      echo "error: multiple devices connected. Set ANDROID_SERIAL to one of:" >&2
+      echo "$devices" | sed 's/^/  /' >&2
+      exit 1
+    fi
+  fi
+}
+
+# Wraps a string in single quotes and escapes any embedded single quotes,
+# so it is safe to pass as an argument to `adb shell` where the Android
+# shell would otherwise interpret metacharacters (; $ | ` & etc.).
+shell_quote() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+resolve_local_path() {
+  local path="$1"
+  if [[ ! -e "$path" ]]; then
+    echo "error: local path does not exist: $path" >&2
+    exit 1
+  fi
+  echo "$(cd "$(dirname "$path")" && pwd -P)/$(basename "$path")"
+}
+
+usage() {
+  cat <<EOF
+mac-android v${VERSION} — move files between Mac and Android over USB (via adb)
+
+Usage:
+  mac-android setup
+  mac-android devices
+  mac-android push <local-path> [remote-path]
+  mac-android pull <remote-path> [local-path]
+  mac-android ls [remote-path]
+
+Commands:
+  setup     Install Android platform tools (adb) via Homebrew
+  devices   List connected Android devices
+  push      Copy file or directory from Mac to Android
+  pull      Copy file or directory from Android to Mac
+  ls        List files on the device
+
+Examples:
+  mac-android push ~/Photos/vacation.jpg
+  mac-android push ~/Documents/report.pdf /sdcard/Documents/
+  mac-android push ~/Music/Album /sdcard/Music/Album
+  mac-android pull /sdcard/Download/photo.jpg ~/Desktop/
+  mac-android ls /sdcard/Download
+
+Environment:
+  ANDROID_SERIAL   Target a specific device when multiple are connected
+
+Default remote directory: ${DEFAULT_REMOTE}
+EOF
+}
+
+cmd_setup() {
+  if command -v adb >/dev/null 2>&1; then
+    echo "adb is already installed: $(command -v adb)"
+    adb_cmd version | head -1
+    return
+  fi
+
+  if ! command -v brew >/dev/null 2>&1; then
+    cat >&2 <<'EOF'
+error: Homebrew is required to install adb.
+
+Install Homebrew from https://brew.sh, then run:
+  mac-android setup
+EOF
+    exit 1
+  fi
+
+  echo "Installing Android platform tools..."
+  brew install --cask android-platform-tools
+  echo
+  echo "Done. Connect your Android device and run: mac-android devices"
+}
+
+cmd_devices() {
+  adb_cmd devices -l
+}
+
+cmd_push() {
+  local local_path="${1:?local path required}"
+  local remote_path="${2:-$DEFAULT_REMOTE}"
+  local resolved
+
+  resolved="$(resolve_local_path "$local_path")"
+  require_device
+
+  if [[ -d "$resolved" ]]; then
+    remote_path="${remote_path%/}/$(basename "$resolved")"
+  fi
+
+  echo "Pushing: $resolved → $remote_path"
+  adb_cmd push "$resolved" "$remote_path"
+  echo "Done."
+}
+
+cmd_pull() {
+  local remote_path="${1:?remote path required}"
+  local local_path="${2:-.}"
+  require_device
+
+  local_path="$(cd "$local_path" 2>/dev/null && pwd -P || echo "$local_path")"
+
+  echo "Pulling: $remote_path → $local_path"
+  adb_cmd pull "$remote_path" "$local_path"
+  echo "Done."
+}
+
+cmd_ls() {
+  local remote_path="${1:-$DEFAULT_REMOTE}"
+  require_device
+  adb_cmd shell ls -la -- "$(shell_quote "$remote_path")"
+}
+
+main() {
+  local cmd="${1:-}"
+  shift || true
+
+  case "$cmd" in
+    setup)   cmd_setup "$@" ;;
+    devices) cmd_devices "$@" ;;
+    push)    cmd_push "$@" ;;
+    pull)    cmd_pull "$@" ;;
+    ls)      cmd_ls "$@" ;;
+    -h|--help|help|"")
+      usage
+      ;;
+    -v|--version|version)
+      echo "mac-android v${VERSION}"
+      ;;
+    *)
+      echo "error: unknown command: $cmd" >&2
+      echo "Run: mac-android --help" >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Fast lint runs on Linux — no macOS runner needed
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bash syntax check (CLI)
+        run: bash -n bin/mac-android
+
+      - name: Bash syntax check (GUI launcher)
+        run: bash -n bin/mac-android-gui
+
+      - name: Bash syntax check (build script)
+        run: bash -n gui/build.sh
+
+      - name: Bash syntax check (install script)
+        run: bash -n install.sh
+
+  # Full build on macOS to verify the Swift GUI compiles
+  build:
+    name: Build GUI
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build mac-android.app
+        run: bash gui/build.sh
+
+      - name: Verify Hardened Runtime
+        run: |
+          codesign -dv mac-android.app 2>&1 | grep -q "runtime" \
+            && echo "Hardened Runtime: OK" \
+            || (echo "Hardened Runtime flag missing" && exit 1)
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-android-app-${{ github.sha }}
+          path: mac-android.app
+          retention-days: 7

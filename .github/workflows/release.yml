@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build mac-android.app
+        run: bash gui/build.sh
+
+      - name: Verify Hardened Runtime
+        run: |
+          codesign -dv mac-android.app 2>&1 | grep -q "runtime" \
+            && echo "Hardened Runtime: OK" \
+            || (echo "Hardened Runtime flag missing" && exit 1)
+
+      # ── GUI: DMG ──────────────────────────────────────────────────────────
+      - name: Create DMG
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Temporary staging folder with a symlink to /Applications
+          STAGING="$(mktemp -d)/dmg-staging"
+          mkdir "$STAGING"
+          cp -R mac-android.app "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+
+          hdiutil create \
+            -volname "mac-android ${VERSION}" \
+            -srcfolder "$STAGING" \
+            -ov -format UDZO \
+            "mac-android-${VERSION}.dmg"
+
+      # ── CLI: tarball ──────────────────────────────────────────────────────
+      - name: Create CLI archive
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          tar -czf "mac-android-cli-${VERSION}.tar.gz" \
+            bin/mac-android \
+            install.sh \
+            README.md \
+            LICENSE
+
+      # ── Checksums ─────────────────────────────────────────────────────────
+      - name: Generate checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          shasum -a 256 \
+            "mac-android-${VERSION}.dmg" \
+            "mac-android-cli-${VERSION}.tar.gz" \
+            > "checksums-${VERSION}.txt"
+          cat "checksums-${VERSION}.txt"
+
+      # ── GitHub Release ────────────────────────────────────────────────────
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.version.outputs.version }}"
+          generate_release_notes: true
+          files: |
+            mac-android-${{ steps.version.outputs.version }}.dmg
+            mac-android-cli-${{ steps.version.outputs.version }}.tar.gz
+            checksums-${{ steps.version.outputs.version }}.txt
