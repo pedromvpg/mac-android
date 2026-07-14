@@ -5,7 +5,7 @@ struct FileExplorerView: View {
     @EnvironmentObject private var adb: AdbService
     @State private var currentPath = "/storage/emulated/0"
     @State private var entries: [RemoteFile] = []
-    @State private var selectedID: String?
+    @State private var selectedIDs: Set<String> = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var pathField = "/storage/emulated/0"
@@ -99,7 +99,7 @@ struct FileExplorerView: View {
             Button("Pull to Mac") {
                 Task { await pullSelected() }
             }
-            .disabled(selectedFile == nil || selectedFile?.isDirectory == true || adb.isTransferring)
+            .disabled(selectedFiles.isEmpty || adb.isTransferring)
 
             Button("Push…") {
                 Task { await pushFromPicker() }
@@ -122,7 +122,7 @@ struct FileExplorerView: View {
                 description: Text("This directory has no visible files.")
             )
         } else {
-            Table(entries, selection: $selectedID) {
+            Table(entries, selection: $selectedIDs) {
                 TableColumn("Name") { file in
                     if file.isDirectory || file.isSymlink {
                         Button {
@@ -168,22 +168,24 @@ struct FileExplorerView: View {
                 .width(ideal: 90)
             }
             .contextMenu(forSelectionType: String.self) { ids in
-                if let file = file(for: ids.first) {
-                    if file.isDirectory || file.isSymlink {
+                let files = files(for: ids)
+                if !files.isEmpty {
+                    if files.count == 1, let file = files.first, file.isDirectory || file.isSymlink {
                         Button("Open") { navigate(to: file.path) }
-                    } else {
-                        Button("Pull to Mac") {
-                            selectedID = file.id
-                            Task { await pullSelected() }
-                        }
                     }
-                    Button("Copy Path") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(file.path, forType: .string)
+                    Button("Pull to Mac") {
+                        selectedIDs = ids
+                        Task { await pullSelected() }
+                    }
+                    if files.count == 1, let file = files.first {
+                        Button("Copy Path") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(file.path, forType: .string)
+                        }
                     }
                 }
             } primaryAction: { ids in
-                if let file = file(for: ids.first), file.isDirectory || file.isSymlink {
+                if let file = files(for: ids).first, file.isDirectory || file.isSymlink {
                     navigate(to: file.path)
                 }
             }
@@ -212,13 +214,12 @@ struct FileExplorerView: View {
         .background(Color.orange.opacity(0.08))
     }
 
-    private var selectedFile: RemoteFile? {
-        file(for: selectedID)
+    private var selectedFiles: [RemoteFile] {
+        files(for: selectedIDs)
     }
 
-    private func file(for id: String?) -> RemoteFile? {
-        guard let id else { return nil }
-        return entries.first { $0.id == id }
+    private func files(for ids: Set<String>) -> [RemoteFile] {
+        entries.filter { ids.contains($0.id) }
     }
 
     private var canGoUp: Bool {
@@ -240,7 +241,7 @@ struct FileExplorerView: View {
         }
         currentPath = normalized
         pathField = normalized
-        selectedID = nil
+        selectedIDs = []
     }
 
     private func loadDirectory() async {
@@ -257,12 +258,34 @@ struct FileExplorerView: View {
     }
 
     private func pullSelected() async {
-        guard let file = selectedFile, !file.isDirectory else { return }
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = file.name
+        let files = selectedFiles
+        guard !files.isEmpty else { return }
+
+        if files.count == 1, let file = files.first, !file.isDirectory {
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = file.name
+            panel.canCreateDirectories = true
+            panel.prompt = "Save"
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            await adb.pull(remote: file.path, to: url)
+            return
+        }
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        await adb.pull(remote: file.path, to: url)
+        panel.prompt = "Choose destination folder"
+        panel.message = files.count == 1
+            ? "Choose where to save “\(files[0].name)” on your Mac."
+            : "Choose a folder on your Mac for \(files.count) items from your phone."
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+
+        await adb.pull(
+            items: files.map { ($0.path, true) },
+            to: destination
+        )
     }
 
     private func pushFromPicker() async {

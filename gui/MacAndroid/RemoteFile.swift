@@ -62,7 +62,7 @@ enum RemoteFileParser {
         if isSymlink, let arrow = name.range(of: " -> ") {
             let target = String(name[arrow.upperBound...])
             name = String(name[..<arrow.lowerBound])
-            isDirectory = target.hasPrefix("/") || target.hasSuffix("/")
+            isDirectory = target.hasSuffix("/")
         }
 
         if name.hasSuffix("/") {

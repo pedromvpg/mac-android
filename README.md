@@ -68,7 +68,7 @@ The app provides drag-and-drop push, a built-in file explorer to browse your pho
 
 | Tab | What it does |
 |-----|-------------|
-| **Explorer** | Browse folders, pull files to your Mac, drag files in to upload |
+| **Explorer** | Browse folders, pull files and folders to your Mac (multi-select supported), drag files in to upload |
 | **Transfer** | Drop files here to push them to `/sdcard/Download` (or a custom path) |
 | **Storage** | View used and free space per volume |
 | **Log** | Per-transfer history with success/failure details |

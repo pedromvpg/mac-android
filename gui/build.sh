@@ -7,6 +7,9 @@ DIST_APP="${ROOT}/mac-android.app"
 
 cd "$GUI_DIR"
 
+echo "Building app icon..."
+iconutil -c icns MacAndroid/AppIcon.iconset -o MacAndroid/AppIcon.icns
+
 echo "Building mac-android GUI..."
 xcodebuild \
   -project MacAndroid.xcodeproj \

@@ -15,6 +15,7 @@
 		A100000100000006 /* StorageVolume.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000007 /* StorageVolume.swift */; };
 		A100000100000007 /* StorageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000200000008 /* StorageView.swift */; };
 		A100000100000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A100000200000009 /* Assets.xcassets */; };
+		A100000100000009 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A100000200000011 /* AppIcon.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		A100000200000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A100000200000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A100000200000010 /* MacAndroid.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MacAndroid.entitlements; sourceTree = "<group>"; };
+		A100000200000011 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		A100000300000001 /* mac-android.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "mac-android.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -53,6 +55,7 @@
 				A100000200000009 /* Assets.xcassets */,
 				A100000200000004 /* Info.plist */,
 				A100000200000010 /* MacAndroid.entitlements */,
+				A100000200000011 /* AppIcon.icns */,
 			);
 			path = MacAndroid;
 			sourceTree = "<group>";
@@ -135,6 +138,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100000100000008 /* Assets.xcassets in Resources */,
+				A100000100000009 /* AppIcon.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -178,7 +182,7 @@
 		A100000900000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = MacAndroid/MacAndroid.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CURRENT_PROJECT_VERSION = 1;
@@ -200,7 +204,7 @@
 		A100000900000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = MacAndroid/MacAndroid.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CURRENT_PROJECT_VERSION = 1;

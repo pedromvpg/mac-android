@@ -110,18 +110,42 @@ final class AdbService: ObservableObject {
         }
     }
 
-    func pull(remote: String, to localURL: URL) async {
+    func pull(items: [(remote: String, treatLocalAsDirectory: Bool)], to localURL: URL) async {
+        guard !items.isEmpty else { return }
         isTransferring = true
         defer { isTransferring = false }
 
         do {
             try await validateDevice()
             let adb = try adbExecutable()
-            let (output, exitCode) = await run(adb, arguments: ["pull", remote, localURL.path])
-            logTransfer(name: localURL.lastPathComponent, remotePath: remote, success: exitCode == 0, detail: output ?? "")
+
+            for item in items {
+                let localPath: String
+                if item.treatLocalAsDirectory {
+                    localPath = localURL.path
+                    try FileManager.default.createDirectory(at: localURL, withIntermediateDirectories: true)
+                } else {
+                    localPath = localURL.path
+                    let parent = localURL.deletingLastPathComponent()
+                    try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+                }
+
+                let name = URL(fileURLWithPath: item.remote).lastPathComponent
+                let (output, exitCode) = await run(adb, arguments: ["pull", item.remote, localPath])
+                logTransfer(name: name, remotePath: item.remote, success: exitCode == 0, detail: output ?? "")
+            }
         } catch {
-            logTransfer(name: localURL.lastPathComponent, remotePath: remote, success: false, detail: error.localizedDescription)
+            logTransfer(
+                name: items.map { URL(fileURLWithPath: $0.remote).lastPathComponent }.joined(separator: ", "),
+                remotePath: items.map(\.remote).joined(separator: ", "),
+                success: false,
+                detail: error.localizedDescription
+            )
         }
+    }
+
+    func pull(remote: String, to localURL: URL, treatLocalAsDirectory: Bool = false) async {
+        await pull(items: [(remote, treatLocalAsDirectory)], to: localURL)
     }
 
     func listDirectory(at path: String) async throws -> [RemoteFile] {

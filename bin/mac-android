@@ -151,7 +151,20 @@ cmd_pull() {
   local local_path="${2:-.}"
   require_device
 
-  local_path="$(cd "$local_path" 2>/dev/null && pwd -P || echo "$local_path")"
+  if [[ -d "$local_path" ]]; then
+    local_path="$(cd "$local_path" && pwd -P)"
+  elif [[ -e "$local_path" ]]; then
+    local_path="$(cd "$(dirname "$local_path")" && pwd -P)/$(basename "$local_path")"
+  else
+    local parent
+    parent="$(dirname "$local_path")"
+    if [[ -d "$parent" ]]; then
+      local_path="$(cd "$parent" && pwd -P)/$(basename "$local_path")"
+    else
+      mkdir -p "$parent"
+      local_path="$(cd "$parent" && pwd -P)/$(basename "$local_path")"
+    fi
+  fi
 
   echo "Pulling: $remote_path → $local_path"
   adb_cmd pull "$remote_path" "$local_path"
