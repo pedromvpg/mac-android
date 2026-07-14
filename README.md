@@ -1,19 +1,28 @@
 # mac-android
 
-[![CI](https://github.com/pedromvpg/mac-android/actions/workflows/ci.yml/badge.svg)](https://github.com/pedromvpg/mac-android/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/pedromvpg/mac-android)](https://github.com/pedromvpg/mac-android/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-lightgrey?logo=apple)](https://github.com/pedromvpg/mac-android/releases/latest)
+<p align="center">
+  <img src="docs/assets/icon-256.png" alt="mac-android icon" width="128">
+</p>
 
-Move files between your Mac and an Android phone over USB using [adb](https://developer.android.com/tools/adb). No cloud, no Wi-Fi — just a cable.
+<p align="center">
+  <strong>Move files between your Mac and an Android phone over USB.</strong><br>
+  No cloud, no Wi‑Fi — just a cable.
+</p>
 
-Comes as both a **GUI app** (drag-and-drop) and a **CLI tool**.
+<p align="center">
+  <a href="https://github.com/pedromvpg/mac-android/actions/workflows/ci.yml"><img src="https://github.com/pedromvpg/mac-android/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/pedromvpg/mac-android/releases/latest"><img src="https://img.shields.io/github/v/release/pedromvpg/mac-android" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://github.com/pedromvpg/mac-android/releases/latest"><img src="https://img.shields.io/badge/macOS-14%2B-lightgrey?logo=apple" alt="macOS 14+"></a>
+</p>
+
+Comes as both a **GUI app** (drag-and-drop) and a **CLI tool**, powered by [adb](https://developer.android.com/tools/adb).
 
 ## Download
 
 **GUI app** — drag-and-drop, no Terminal needed:
 
-➜ [Download the latest `.dmg`](https://github.com/pedromvpg/mac-android/releases/latest)
+➜ [**Download the latest `.dmg`**](https://github.com/pedromvpg/mac-android/releases/latest)
 
 Open the DMG, drag `mac-android.app` to your Applications folder, and launch it.
 
@@ -25,6 +34,21 @@ cd mac-android
 ./install.sh
 mac-android setup
 ```
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><strong>Explorer</strong><br>Browse your phone's filesystem</td>
+    <td align="center"><strong>Transfer</strong><br>Drag-and-drop to push files</td>
+    <td align="center"><strong>Storage</strong><br>See used and free space</td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/screenshot-explorer.png" alt="Explorer tab" width="400"></td>
+    <td><img src="docs/assets/screenshot-transfer.png" alt="Transfer tab" width="400"></td>
+    <td><img src="docs/assets/screenshot-storage.png" alt="Storage tab" width="400"></td>
+  </tr>
+</table>
 
 ## Prerequisites
 
@@ -44,8 +68,9 @@ The app provides drag-and-drop push, a built-in file explorer to browse your pho
 
 | Tab | What it does |
 |-----|-------------|
-| **Transfer** | Drop files here to push them to `/sdcard/Download` (or a custom path) |
 | **Explorer** | Browse folders, pull files to your Mac, drag files in to upload |
+| **Transfer** | Drop files here to push them to `/sdcard/Download` (or a custom path) |
+| **Storage** | View used and free space per volume |
 | **Log** | Per-transfer history with success/failure details |
 
 To build the GUI from source:
